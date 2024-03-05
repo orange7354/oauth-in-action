@@ -10,9 +10,49 @@ app.set('views','file/client');
 const clientPort = 3000;
 
 
+const clients = {
+    client_id: 'oauth-client-1',
+    client_secret: 'oauth-client-secret-1',
+    redirect_uris: ['http://localhost:3000/callback']
+}
+
+
 app.get('/',function(req,res){
 	res.render('index', {access_token: '', scope: ''});
 });
+
+
+
+app.get('/authorize',(req,res) => {
+    //ユーザーを認証するためのページを表示する
+    const authorizeUrl = buildUrl('http://localhost:3001/authorize',{
+        response_type: 'code',
+        client_id: clients.client_id,
+        redirect_uri: 'http://localhost:3000/callback',
+    });
+    console.log('redirect',authorizeUrl);
+    res.redirect(authorizeUrl);
+})
+
+function buildUrl(base, options , hash) {
+    const newUrl = new URL(base);
+    if(!newUrl.search){
+        newUrl.search = '';
+    }
+
+    Object.keys(options).forEach((key) => {
+        newUrl.searchParams.set(key,options[key]);
+    });
+
+    if(hash){
+        newUrl.hash = hash;
+    }
+
+    return newUrl.toString();
+}
+
+
+
 
 
 
