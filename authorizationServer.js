@@ -29,6 +29,13 @@ const authServer = {
     tokenEndpoint: 'http://localhost:3001/token',
 }
 
+var codes = {};
+
+var requests = {};
+
+function getClient(clientId) {
+    return clients.client_id === clientId ? clients : null;
+}
 
 app.get('/', function (req, res) {
     res.render('index', { clients: clients , authServer : authServer});
@@ -36,6 +43,39 @@ app.get('/', function (req, res) {
 
 
 app.get('/authorize', function (req, res) {
+    // TODO 第五章で学習予定
+
+    var client = getClient(req.query.client_id);
+	
+	if (!client) {
+		console.log('Unknown client %s', req.query.client_id);
+		res.render('error', {error: 'Unknown client'});
+		return;
+	} else if (!__.contains(client.redirect_uris, req.query.redirect_uri)) {
+		console.log('Mismatched redirect URI, expected %s got %s', client.redirect_uris, req.query.redirect_uri);
+		res.render('error', {error: 'Invalid redirect URI'});
+		return;
+	} else {
+		
+		var rscope = req.query.scope ? req.query.scope.split(' ') : undefined;
+		var cscope = client.scope ? client.scope.split(' ') : undefined;
+		if (__.difference(rscope, cscope).length > 0) {
+			// client asked for a scope it couldn't have
+			var urlParsed = url.parse(req.query.redirect_uri);
+			delete urlParsed.search; // this is a weird behavior of the URL library
+			urlParsed.query = urlParsed.query || {};
+			urlParsed.query.error = 'invalid_scope';
+			res.redirect(url.format(urlParsed));
+			return;
+		}
+		
+		var reqid = randomstring.generate(8);
+		
+		requests[reqid] = req.query;
+		
+		res.render('approve', {client: client, reqid: reqid, scope: rscope});
+		return;
+	}
 });
 
 
